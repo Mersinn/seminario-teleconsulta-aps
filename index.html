@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teleconsulta na Atenção Primária</title>
+<style>
+@font-face{font-family:"Sch";src:url(fontes/IBMPlexSans-Regular.ttf);font-weight:400}
+@font-face{font-family:"Sch";src:url(fontes/IBMPlexSans-Italic.ttf);font-weight:400;font-style:italic}
+@font-face{font-family:"Sch";src:url(fontes/IBMPlexSans-Medium.ttf);font-weight:500}
+@font-face{font-family:"Sch";src:url(fontes/IBMPlexSans-SemiBold.ttf);font-weight:600}
+@font-face{font-family:"Sch";src:url(fontes/IBMPlexSans-Bold.ttf);font-weight:700 900}
+@font-face{font-family:"AX";src:url(fontes/ArchivoExtraCondensed-Black.ttf);font-weight:400 900}
+@font-face{font-family:"AC";src:url(fontes/ArchivoCondensed-Bold.ttf);font-weight:400 900}
+@font-face{font-family:"Mono";src:url(fontes/IBMPlexMono-Regular.ttf);font-weight:400}
+@font-face{font-family:"Mono";src:url(fontes/IBMPlexMono-Medium.ttf);font-weight:500}
+@font-face{font-family:"Mono";src:url(fontes/IBMPlexMono-SemiBold.ttf);font-weight:600}
+
+:root{--paper:#F3F1EA;--ink:#111614;--green:#0B4F3E;--green2:#083B2E;--mint:#38F2AF;--gray:#B2B8B4;--alert:#FF5A26;--muted:#5d6461}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#0b0d0c;overflow:hidden}
+body{font-family:"Sch",system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;font-variant-numeric:lining-nums;text-rendering:optimizeLegibility}
+#deck{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:0 0}
+.slide{position:absolute;inset:0;width:1920px;height:1080px;background:var(--paper);overflow:hidden;display:none}
+.slide.on{display:block}
+.slide .notes{display:none}
+.slide.dk{background:var(--ink);color:var(--paper)}
+.slide.gr{background:var(--green);color:var(--paper)}
+
+.bar{position:absolute;left:100px;right:100px;top:36px;display:flex;justify-content:space-between;font:500 25px/1 "Mono";letter-spacing:.02em;padding-bottom:14px;border-bottom:2px solid currentColor}
+.bar span:last-child{opacity:.7}
+
+.t{position:absolute;left:100px;top:100px;right:100px;font:900 92px/.98 "AX";letter-spacing:.005em;word-spacing:.14em;text-transform:uppercase}
+.t.s{font-size:68px}
+.b1{font:400 36px/1.4 "Sch"}
+.b2{font:400 34px/1.4 "Sch"}
+.b3{font:400 30px/1.38 "Sch"}
+.lb{font:600 27px/1.25 "Mono";letter-spacing:.03em;text-transform:uppercase}
+.fn{position:absolute;left:100px;right:100px;bottom:28px;font:400 24px/1.35 "Mono";opacity:.85}
+.big{font:900 170px/.88 "AX";letter-spacing:0}
+.st{font-weight:700}
+.mk{background:var(--mint);color:var(--ink);padding:0 .14em;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.abs{position:absolute}
+
+.tb{width:100%;border-collapse:collapse}
+.tb th{font:600 25px/1.2 "Mono";letter-spacing:.03em;text-transform:uppercase;text-align:left;padding:0 20px 14px 0;border-bottom:2px solid currentColor;vertical-align:bottom}
+.tb td{font:400 32px/1.3 "Sch";padding:18px 20px 18px 0;border-bottom:1.5px solid var(--gray);vertical-align:top}
+.tb td:first-child{font-weight:700}
+.dk .tb td,.gr .tb td{border-bottom-color:rgba(243,241,234,.28)}
+
+.ol{list-style:none;counter-reset:o}
+.ol li{counter-increment:o;position:relative;padding:0 0 20px 64px;margin-bottom:20px;border-bottom:1.5px solid var(--gray);font:400 33px/1.34 "Sch"}
+.ol li:last-child{border-bottom:0;margin-bottom:0}
+.ol li:before{content:counter(o);position:absolute;left:0;top:-2px;font:800 40px/1 "Sch";color:var(--green)}
+.dk .ol li,.gr .ol li{border-bottom-color:rgba(243,241,234,.28)}
+.dk .ol li:before,.gr .ol li:before{color:var(--mint)}
+
+#ui{position:fixed;left:0;right:0;bottom:0;height:6px;background:#1d2220;z-index:20}
+#pbar{height:100%;width:0;background:var(--mint);transition:width .25s}
+#hud{position:fixed;right:14px;bottom:14px;z-index:21;font:500 14px/1 "Mono";color:#9aa19e;display:flex;gap:12px;align-items:center;opacity:0;transition:opacity .3s}
+body:hover #hud{opacity:1}
+#hud button{all:unset;cursor:pointer;padding:6px 9px;border:1px solid #555;color:#ddd}
+#timer{font:800 22px/1 "Sch";color:#ddd}
+#timer.warn{color:var(--mint)} #timer.late{color:var(--alert)}
+#notes{position:fixed;top:0;right:0;bottom:0;width:min(560px,42vw);background:#0e1110;color:#eee;z-index:30;padding:28px 30px 60px;overflow:auto;transform:translateX(100%);transition:transform .25s;border-left:3px solid var(--mint)}
+#notes.open{transform:none}
+#notes h5{font:800 26px/1.15 "Sch";color:var(--mint);margin-bottom:8px}
+#notes .tt{font:500 14px/1 "Mono";color:#999;margin-bottom:18px}
+#notes p,#notes li{font:400 18px/1.5 "Sch";margin-bottom:10px}
+#notes ul{padding-left:20px}
+#help{position:fixed;left:16px;bottom:16px;z-index:21;font:400 13px/1.5 "Mono";color:#777;opacity:0;transition:opacity .3s}
+body:hover #help{opacity:1}
+
+#pan .n,#kv b,#mchart .c span,#stack div,#ages .a b,#gov b,#steps b,#fm b,#poll .po b,.ol li:before,#tl .ev .y,#clk,#curT,#sim .cam .off b,#quiz .qa b,#sc,.at b,#sim .st .sn,#tri .tq b,#sim .soap b,.cvt,.pv{font-family:"AX"!important;letter-spacing:.005em!important;font-weight:900!important}
+#gov b,#fm b,#curT,#quiz .qa b,.cvt{text-transform:uppercase;word-spacing:.12em}
+#gov b{font-size:50px!important}#fm b{font-size:58px!important}#curT{font-size:54px!important}#quiz .qa b{font-size:44px!important}
+@page{size:1920px 1080px;margin:0}
+body.print{overflow:visible;background:#fff;height:auto}
+body.print #deck{position:static;transform:none!important;width:1920px;height:auto}
+body.print .slide{display:block;position:relative;page-break-after:always;break-after:page}
+body.print #ui,body.print #hud,body.print #notes,body.print #help,body.print .noprint{display:none!important}
+</style>
+</head>
+<body>
+<div id="deck">
+
+<!-- 01 CAPA -->
+<section class="slide" data-sec="Capa" data-t="1">
+  <img class="abs" src="img/fotos/ubs_verde.jpg" alt="" style="right:0;top:0;width:820px;height:1080px;object-fit:cover;object-position:28% 50%">
+  <div class="abs" style="right:28px;bottom:24px;width:760px;text-align:right;color:var(--paper);font:400 22px/1.35 'Mono';text-shadow:0 0 6px rgba(0,0,0,.5)">Foto: Túllio F. (2023), CC BY-SA 4.0</div>
+  <div class="abs" style="left:100px;top:64px;font:600 28px/1.2 'Sch'">Faculdade de Medicina Nova Esperança <span style="font-weight:400">· FAMENE</span></div>
+  <div class="abs" style="left:96px;top:150px;width:1000px;font:900 118px/.92 'AX';text-transform:uppercase;word-spacing:.12em">Teleconsulta na Atenção <span style="color:var(--green)">Primária à Saúde</span></div>
+  <div class="abs" style="left:100px;top:540px;width:960px;font:400 42px/1.3 'Sch'">Saúde digital, prontuário eletrônico e continuidade do cuidado: análise de Britto et al. (2026) à luz da PNAB 2017</div>
+  <div class="abs" style="left:100px;bottom:60px;width:960px;display:grid;grid-template-columns:1fr 1fr;gap:22px 40px;border-top:2px solid var(--ink);padding-top:22px">
+    <div><div class="lb" style="font-size:24px;color:var(--muted)">Aluno</div><div style="font:600 34px/1.25 'Sch'" contenteditable="true" spellcheck="false">Emerson Freitas</div></div>
+    <div><div class="lb" style="font-size:24px;color:var(--muted)">Professora</div><div style="font:600 34px/1.25 'Sch'">Iara Araújo de Medeiros</div></div>
+    <div><div class="lb" style="font-size:24px;color:var(--muted)">Módulo</div><div style="font:500 30px/1.25 'Sch'">Integração Extensão Serviço Ensino e Comunidade 1 (IESEC 1)</div></div>
+    <div><div class="lb" style="font-size:24px;color:var(--muted)">Turma</div><div style="font:500 30px/1.25 'Sch'">P1, Turma Especial · 2026.2</div></div>
+  </div>
+  <aside class="notes">
+    <p>Apresentação pessoal. Tema: teleconsulta e prontuário eletrônico na Atenção Básica.</p>
+    <p>Artigo: Britto et al., <em>Ciência &amp; Saúde Coletiva</em>, 2026: implantação de teleconsultas em clínicas da família do Complexo da Maré (RJ).</p>
+    <p>Roteiro na ordem do edital: introdução (com desenvolvimento), resultados (síntese, análise crítica, vivência e PNAB), considerações finais e referências.</p>
+  </aside>
+</section>
+
+<!-- 02 ENQUETE -->
+<section class="slide dk" data-sec="2 · Introdução" data-t="2" id="poll">
+  <div class="bar"><span>2 · Introdução</span><span>02 / 22</span></div>
+  <div class="t" style="right:430px;font-size:84px">Em 1.017 teleconsultas na APS da Maré (RJ), qual foi o motivo mais frequente?</div>
+  <button class="abs noprint" id="pollbtn" style="all:unset;position:absolute;right:100px;top:118px;cursor:pointer;font:600 24px/1 'Mono';text-transform:uppercase;background:var(--alert);color:var(--ink);padding:18px 22px">Revelar · R</button>
+  <div class="abs" style="left:100px;right:100px;top:400px" id="prow">
+    <div class="po" data-v="2"><b>A</b><p>Renovação de receita de uso contínuo</p><div class="trk"><i style="width:2%"></i></div><em class="pv">2%</em></div>
+    <div class="po" data-v="5"><b>B</b><p>Queixa aguda simples</p><div class="trk"><i style="width:5%"></i></div><em class="pv">5%</em></div>
+    <div class="po" data-v="33"><b>C</b><p>Condições crônicas e ciclos de vida</p><div class="trk"><i style="width:33%"></i></div><em class="pv">33%</em></div>
+    <div class="po win" data-v="58"><b>D</b><p>Seguimento de atendimento recente</p><div class="trk"><i style="width:58%"></i></div><em class="pv">58%</em></div>
+  </div>
+  <div class="fn">Fonte: Britto et al. (2026), Tabela 1. Outros motivos: 2%.</div>
+  <style>
+    #prow .po{display:grid;grid-template-columns:90px 560px 1fr 190px;align-items:center;gap:0 24px;border-top:2px solid rgba(243,241,234,.35);padding:22px 0;cursor:pointer}
+    #prow .po:last-child{border-bottom:2px solid rgba(243,241,234,.35)}
+    #prow .po b{font-size:84px;line-height:1;color:var(--mint)}
+    #prow .po p{font:500 36px/1.2 "Sch"}
+    #prow .trk{height:64px;border:2px solid rgba(243,241,234,.45);position:relative}
+    #prow .trk i{position:absolute;left:0;top:0;bottom:0;background:var(--paper);opacity:0;transition:opacity .4s}
+    #prow .pv{font-size:96px!important;line-height:1;font-style:normal;text-align:right;opacity:0}
+    #prow .po.picked{background:#1f2624}
+    #poll.revealed #prow .trk i{opacity:.55}
+    #poll.revealed #prow .pv{opacity:1}
+    #poll.revealed #prow .win .trk i{background:var(--alert);opacity:1}
+    #poll.revealed #prow .win .pv,#poll.revealed #prow .win b{color:var(--alert)}
+    #poll.revealed #prow .win p{font-weight:700}
+    #poll.revealed #pollbtn{display:none}
+  </style>
+  <aside class="notes">
+    <p>Peça que a turma vote levantando a mão (clique na opção mais votada). Depois aperte R.</p>
+    <p>Resposta: D, seguimento de atendimento recente (58%), seguida de crônicos e ciclos de vida (33%). Somadas, 91%. Renovação de receita: 2%.</p>
+    <p>A ideia comum é que teleconsulta serve para “resolver coisa rápida”. Na APS da Maré, ela foi usada principalmente para continuidade do cuidado.</p>
+  </aside>
+</section>
+
+<!-- 03 MARCOS -->
+<section class="slide" data-sec="2 · Introdução" data-t="2.5">
+  <div class="bar"><span>2 · Introdução · tema e contexto</span><span>03 / 22</span></div>
+  <div class="t">Marcos da saúde digital no SUS</div>
+  <div class="abs" id="tl" style="left:100px;right:100px;top:270px;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:1fr 1fr;height:720px"></div>
+  <div class="fn">Fontes: Celuppi et al. (2024); Britto et al. (2026); Brasil (2017; 2022); CFM (2022).</div>
+  <style>
+    #tl .ev{border-top:2px solid var(--ink);padding:22px 30px 0 0}
+    #tl .ev .y{font:800 60px/1 "Sch";letter-spacing:-.03em;margin-bottom:14px}
+    #tl .ev .d{font:400 29px/1.32 "Sch"}
+    #tl .ev .d b{font-weight:700}
+    #tl .ev.k .y{color:var(--green)}
+    #tl .ev.m{background:var(--mint);padding-left:22px}
+  </style>
+  <aside class="notes">
+    <ul>
+      <li>2013: começa a implantação do Prontuário Eletrônico do Cidadão (PEC) do e-SUS APS.</li>
+      <li>2017: a PNAB cita “ferramentas de telessaúde” no processo de referenciamento.</li>
+      <li>2020: Rede Nacional de Dados em Saúde (RNDS).</li>
+      <li>2022: Lei 14.510 autoriza a telessaúde em todo o país; Resolução CFM 2.314 regula a telemedicina.</li>
+      <li>2023: o PEC ganha videochamada e prescrição eletrônica; é criada a Secretaria de Informação e Saúde Digital (SEIDIGI).</li>
+      <li>2024: Programa SUS Digital e Ação Estratégica de Telessaúde. No fim do ano começa o piloto da Maré, objeto do artigo.</li>
+    </ul>
+  </aside>
+</section>
+
+<!-- 04 PANORAMA -->
+<section class="slide gr" data-sec="2 · Introdução" data-t="2.5">
+  <div class="bar"><span>2 · Introdução · tema e contexto</span><span>04 / 22</span></div>
+  <div class="t">Prontuário eletrônico e teleconsulta</div>
+  <div class="abs" style="left:100px;right:100px;top:262px" id="pan">
+    <div class="r"><div class="n">26.091</div><div class="x">UBS usavam o PEC e-SUS APS em 2022. Eram 8.930 em 2017.<span>Celuppi et al., 2024</span></div></div>
+    <div class="r"><div class="n">87,82%</div><div class="x">das UBS informatizadas do Nordeste usavam o PEC em 2022 (12.245 de 13.942).<span>Celuppi et al., 2024</span></div></div>
+    <div class="r"><div class="n" style="color:var(--mint)">95,07%</div><div class="x">dos municípios da Paraíba tinham o PEC implantado entre janeiro e abril de 2025, 1º lugar no país.<span>Dados do Ministério da Saúde divulgados por Paraíba Business, 2025</span></div></div>
+    <div class="r"><div class="n">≈ 67%</div><div class="x">das UBS do país não realizavam teleconsulta em 2024; 30% não tinham conexão adequada.<span>Censo Nacional das UBS 2024, segundo Kroll, 2025</span></div></div>
+  </div>
+  <style>
+    #pan .r{display:grid;grid-template-columns:520px 1fr;align-items:center;border-top:2px solid rgba(243,241,234,.5);padding:20px 0}
+    #pan .r:last-child{border-bottom:2px solid rgba(243,241,234,.5)}
+    #pan .n{font:900 118px/.9 "Sch";letter-spacing:-.045em}
+    #pan .x{font:400 32px/1.32 "Sch"}
+    #pan .x span{display:block;font:400 23px/1.3 "Mono";opacity:.75;margin-top:8px}
+  </style>
+  <aside class="notes">
+    <p>O registro eletrônico avançou: de 8.930 para 26.091 UBS com PEC em cinco anos. No Nordeste, a adesão cresceu 367,72% e chegou a 87,82%.</p>
+    <p>Atenção ao denominador: 87,82% é sobre as UBS que já tinham algum prontuário eletrônico, não sobre todas as UBS.</p>
+    <p>A Paraíba aparece em 1º lugar na implantação do PEC no começo de 2025: a infraestrutura de registro já existe aqui.</p>
+    <p>Mas cerca de 2 em cada 3 UBS do país ainda não faziam teleconsulta em 2024. O artigo trata justamente de como implantar teleconsulta na APS.</p>
+  </aside>
+</section>
+
+<!-- 05 ARTIGO E OBJETIVO -->
+<section class="slide" data-sec="2 · Introdução" data-t="2">
+  <div class="bar"><span>2 · Introdução · objetivo do estudo</span><span>05 / 22</span></div>
+  <div class="t">Artigo analisado e objetivo</div>
+  <div class="abs" style="left:100px;right:100px;top:240px;border-top:2px solid var(--ink);padding-top:28px">
+    <div style="font:700 54px/1.12 'Sch';letter-spacing:-.01em;max-width:1600px">Teleconsulta na atenção primária: modelo conceitual e implementação em territórios de favelas</div>
+    <div style="font:400 34px/1.4 'Sch';margin-top:18px">Britto, Dias, Batista-da-Silva et al. · <i>Ciência &amp; Saúde Coletiva</i>, v. 31, n. 5, 2026 · Fiocruz</div>
+  </div>
+  <div class="abs" style="left:100px;right:100px;top:560px;display:grid;grid-template-columns:330px 1fr;gap:40px;background:var(--green);color:var(--paper);padding:40px 48px">
+    <div class="cvt" style="font-size:80px;line-height:.95;color:var(--mint)">Objetivo</div>
+    <p style="font:500 40px/1.35 'Sch'">Sistematizar as etapas de implantação das teleconsultas na Atenção Primária do Conjunto de Favelas da Maré, destacando o sistema de governança e os resultados preliminares.</p>
+  </div>
+  <div class="fn">DOI 10.1590/1413-81232026315.24292025 · objetivo parafraseado da Introdução.</div>
+  <aside class="notes">
+    <p>Artigo da Fiocruz, publicado em 2026 (aceito em dezembro de 2025): dentro dos 5 anos do edital.</p>
+    <p>O objetivo é descritivo: sistematizar etapas, governança e resultados preliminares. Os autores esperam que o estudo apoie outras iniciativas de teleconsulta em territórios vulneráveis.</p>
+  </aside>
+</section>
+
+<!-- 06 RELEVÂNCIA -->
+<section class="slide dk" data-sec="2 · Introdução" data-t="1.5">
+  <div class="bar"><span>2 · Introdução · relevância</span><span>06 / 22</span></div>
+  <div class="t">Relevância: violência armada e acesso à Atenção Primária</div>
+  <div class="abs" style="left:100px;right:100px;top:330px;display:grid;grid-template-columns:repeat(3,1fr);border-top:2px solid var(--paper)">
+    <div class="rv"><div class="big">42</div><p>operações policiais na Maré em 2024</p></div>
+    <div class="rv"><div class="big" style="color:var(--alert)">30</div><p>dias com atendimentos de saúde suspensos no ano</p></div>
+    <div class="rv"><div class="big">≈ 360</div><p>consultas interrompidas a cada dia de suspensão</p></div>
+  </div>
+  <p class="abs b1" style="left:100px;top:730px;width:1500px">Mais de 124 mil pessoas vivem nas 15 favelas da Maré. Quando a unidade fecha, o acompanhamento é interrompido. O estudo descreve a teleconsulta como forma de manter esse acompanhamento.</p>
+  <div class="fn">Dados da Redes da Maré e do Censo 2022 citados por Britto et al. (2026).</div>
+  <style>
+    .rv{border-right:2px solid var(--paper);padding:28px 30px 0}
+    .rv:first-child{padding-left:0}.rv:last-child{border-right:0}
+    .rv p{font:400 32px/1.3 "Sch";margin-top:16px;max-width:460px}
+  </style>
+  <aside class="notes">
+    <p>Em 2024 houve 42 operações policiais na Maré e 30 dias de suspensão dos atendimentos, com cerca de 360 consultas perdidas por dia.</p>
+    <p>No 1º semestre de 2025 as unidades registraram 20 alertas vermelhos (fechamento e evacuação), segundo o artigo.</p>
+    <p>A teleconsulta entra como forma de não perder o acompanhamento quando a unidade fecha.</p>
+  </aside>
+</section>
+
+<!-- 07 MODALIDADES -->
+<section class="slide" data-sec="2 · Introdução" data-t="2">
+  <div class="bar"><span>2 · Introdução · relação com a Atenção Básica</span><span>07 / 22</span></div>
+  <div class="t">Modalidades de telessaúde</div>
+  <div class="abs" style="left:100px;right:100px;top:262px">
+    <table class="tb">
+      <thead><tr><th style="width:25%">Modalidade</th><th style="width:33%">Quem participa</th><th>Onde aparece no SUS</th></tr></thead>
+      <tbody>
+        <tr style="background:var(--mint)"><td style="padding-left:16px">Teleconsulta</td><td>Profissional e usuário</td><td>Objeto do artigo: equipes da Maré com moradores cadastrados</td></tr>
+        <tr><td>Teleconsultoria</td><td>Dois profissionais, sem o usuário</td><td>PEC: compartilhamento do cuidado e videochamada</td></tr>
+        <tr><td>Teleinterconsulta</td><td>Dois profissionais, com o usuário</td><td>PEC: videochamada (versão 5.3)</td></tr>
+        <tr><td>Telemonitoramento</td><td>Equipe acompanha a condição a distância</td><td>Resolução CFM nº 2.314/2022</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="abs" style="left:100px;right:100px;top:780px;border-top:2px solid var(--ink);padding-top:22px;display:grid;grid-template-columns:260px 1fr;gap:30px">
+    <div class="lb" style="color:var(--green)">PNAB 2017</div>
+    <p class="b2">A Atenção Básica é a porta de entrada preferencial do SUS e coordena o cuidado na rede. A PNAB já prevê “ferramentas de telessaúde” no processo de referenciamento.</p>
+  </div>
+  <div class="fn">Fontes: Brasil (2017), Anexo, item 2; Nota Técnica nº 11/2024-SAPS/MS; CFM (2022).</div>
+  <aside class="notes">
+    <p>Teleconsulta é profissional com usuário. Teleconsultoria e teleinterconsulta são entre profissionais. A videochamada do PEC e-SUS APS foi feita para a troca entre profissionais (Nota Técnica 11/2024).</p>
+    <p>Por isso a Maré usou outra solução para falar com o usuário: Google Meet ligado ao prontuário municipal e ao aplicativo minhasaude.rio.</p>
+    <p>Relação com a AB: a telessaúde é ferramenta para funções que já são da AB: porta de entrada, longitudinalidade e coordenação do cuidado.</p>
+  </aside>
+</section>
+
+<!-- 08 MÉTODO -->
+<section class="slide dk" data-sec="2 · Introdução" data-t="2">
+  <div class="bar"><span>2 · Introdução · desenvolvimento</span><span>08 / 22</span></div>
+  <div class="t">Método do estudo</div>
+  <div class="abs" style="left:100px;right:100px;top:262px;display:grid;grid-template-columns:repeat(3,1fr);border-top:2px solid var(--paper)" id="met">
+    <div><span class="lb">Desenho</span><p>Estudo de caso descritivo, com relato de experiência institucional</p></div>
+    <div><span class="lb">Cenário</span><p>4 das 6 clínicas da família da Maré, Rio de Janeiro</p></div>
+    <div><span class="lb">Período</span><p>Novembro de 2024 a junho de 2025 (8 meses)</p></div>
+    <div><span class="lb">Dados</span><p>Documentos institucionais e registros do prontuário eletrônico</p></div>
+    <div><span class="lb">Análise</span><p>Governança (documentos, atores, fluxogramas) e perfil das teleconsultas</p></div>
+    <div><span class="lb">Ferramentas</span><p>Google Meet, prontuário municipal e app minhasaude.rio</p></div>
+  </div>
+  <div class="fn" style="opacity:.85">Não submetido ao sistema CEP/Conep: os autores o classificam como relato institucional sem dados individuais.</div>
+  <style>
+    #met>div{border-right:2px solid var(--paper);border-bottom:2px solid var(--paper);padding:26px 32px 30px;min-height:330px}
+    #met>div:nth-child(3n){border-right:0}
+    #met>div:nth-child(3n+1){padding-left:0}
+    #met .lb{color:var(--mint);display:block;margin-bottom:18px}
+    #met p{font:400 36px/1.3 "Sch";letter-spacing:-.01em}
+  </style>
+  <aside class="notes">
+    <p>Não é ensaio nem estudo quali-quantitativo. É estudo de caso descritivo: descreve o que foi feito e conta as teleconsultas, sem grupo de comparação.</p>
+    <p>Dados: documentos e prontuário eletrônico. Período: os 8 primeiros meses. As unidades receberam webcams e headsets; o usuário agenda e acessa pelo app da prefeitura.</p>
+  </aside>
+</section>
+
+<!-- 09 GOVERNANÇA -->
+<section class="slide" data-sec="2 · Introdução" data-t="2">
+  <div class="bar"><span>2 · Introdução · desenvolvimento</span><span>09 / 22</span></div>
+  <div class="t">Governança e etapas de implantação</div>
+  <div class="abs" style="left:100px;right:100px;top:262px;display:grid;grid-template-columns:repeat(4,1fr)" id="gov">
+    <div><b>Ministério da Saúde</b><p>Diretrizes, recursos e acompanhamento técnico</p></div>
+    <div><b>Prefeitura do Rio</b><p>Operação, capacitação e tecnologia</p></div>
+    <div><b>Fiocruz</b><p>Método, formação e avaliação</p></div>
+    <div class="c"><b>Redes da Maré</b><p>Organização comunitária: escuta e mediação no território</p></div>
+  </div>
+  <div class="abs" style="left:100px;right:100px;top:640px">
+    <div class="lb" style="margin-bottom:16px;color:var(--green)">Seis etapas · cerca de 2 meses por unidade</div>
+    <div style="display:grid;grid-template-columns:repeat(6,1fr)" id="steps">
+      <div><b>1</b>Alinhamento institucional</div><div><b>2</b>Capacitação técnica</div><div class="c"><b>3</b>Mobilização comunitária</div><div><b>4</b>Estruturação operacional</div><div><b>5</b>Execução com suporte</div><div><b>6</b>Avaliação</div>
+    </div>
+  </div>
+  <div class="fn">Fonte: Britto et al. (2026), Figuras 1 e 2. Em junho de 2025: 4 unidades com o serviço, a 5ª em testes e a 6ª em preparação.</div>
+  <style>
+    #gov>div{border:2px solid var(--ink);border-right:0;padding:24px 26px;min-height:300px}
+    #gov>div:last-child{border-right:2px solid var(--ink)}
+    #gov>div.c{background:var(--green);color:var(--paper)}
+    #gov b{display:block;font:800 40px/1.05 "Sch";letter-spacing:-.02em;margin-bottom:18px}
+    #gov p{font:400 29px/1.32 "Sch"}
+    #steps>div{border-top:6px solid var(--ink);padding:16px 18px 0 0;font:600 29px/1.2 "Sch"}
+    #steps>div.c{border-top-color:var(--mint)}
+    #steps b{display:block;font:800 64px/1 "Sch";margin-bottom:8px}
+  </style>
+  <aside class="notes">
+    <p>O principal produto do artigo é o modelo de governança: Ministério da Saúde, Secretaria Municipal do Rio, Fiocruz e a Redes da Maré, organização comunitária.</p>
+    <p>Destaque para a etapa 3, mobilização comunitária: a comunidade participou da implantação. Isso conversa com a diretriz de participação da comunidade da PNAB.</p>
+  </aside>
+</section>
+
+<!-- 10 VOLUME -->
+<section class="slide" data-sec="3 · Resultados" data-t="2">
+  <div class="bar"><span>3 · Resultados · síntese</span><span>10 / 22</span></div>
+  <div class="t">Volume de teleconsultas em 8 meses</div>
+  <div class="abs" style="left:100px;top:300px;width:700px">
+    <div class="big" style="font-size:230px;color:var(--green)">1.017</div>
+    <div class="b1" style="margin-top:10px">teleconsultas de novembro de 2024 a junho de 2025</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;margin-top:36px;border-top:2px solid var(--ink)" id="kv">
+      <div><b>72</b>profissionais: 38 médicos e 34 enfermeiros</div>
+      <div><b>23 min</b>duração média de cada teleconsulta</div>
+    </div>
+  </div>
+  <div class="abs" style="left:900px;right:100px;top:330px;height:600px" id="mchart"></div>
+  <div class="fn">Fonte: Britto et al. (2026), Tabela 1. Mediana mensal: 74 teleconsultas.</div>
+  <style>
+    #kv>div{padding:20px 20px 0 0;font:400 30px/1.3 "Sch"}
+    #kv b{display:block;font:800 76px/1 "Sch";letter-spacing:-.03em;margin-bottom:6px}
+    #mchart{display:grid;grid-template-columns:repeat(8,1fr);gap:16px;align-items:end;border-bottom:2px solid var(--ink)}
+    #mchart .c{position:relative;height:100%;display:flex;flex-direction:column;justify-content:flex-end}
+    #mchart .c i{display:block;background:var(--ink)}
+    #mchart .c.hi i{background:var(--green)}
+    #mchart .c span{font:800 44px/1 "Sch";margin-bottom:8px;letter-spacing:-.02em}
+    #mchart .c em{position:absolute;bottom:-46px;left:0;font:500 28px/1 "Mono";font-style:normal}
+  </style>
+  <aside class="notes">
+    <p>1.017 teleconsultas em 8 meses, por 72 profissionais, quase metade médicos e metade enfermeiros. Duração média de 23 minutos: tempo de consulta.</p>
+    <p>O volume sobe em maio e junho de 2025 (274 e 292), quando mais unidades estavam com o serviço consolidado. O artigo não testa a causa; leio como curva de implantação.</p>
+  </aside>
+</section>
+
+<!-- 11 MOTIVOS E PERFIL -->
+<section class="slide" data-sec="3 · Resultados" data-t="2.5">
+  <div class="bar"><span>3 · Resultados · síntese</span><span>11 / 22</span></div>
+  <div class="t">Motivos e perfil dos usuários</div>
+  <div class="abs" style="left:100px;right:100px;top:270px">
+    <div id="stack"></div>
+    <div id="stackl"></div>
+  </div>
+  <div class="abs" style="left:100px;right:100px;top:620px;display:grid;grid-template-columns:1fr 1.6fr;gap:90px;border-top:2px solid var(--ink);padding-top:26px">
+    <div>
+      <div class="lb" style="color:var(--green);margin-bottom:12px">Sexo</div>
+      <div class="big" style="font-size:170px;color:var(--green)">73%</div>
+      <div class="b2" style="margin-top:8px">mulheres · 23% homens · 4% sem registro</div>
+    </div>
+    <div>
+      <div class="lb" style="color:var(--green);margin-bottom:12px">Idade</div>
+      <div id="ages"></div>
+    </div>
+  </div>
+  <div class="fn">Fonte: Britto et al. (2026), Tabela 1. Receitas de uso contínuo: anticoncepção, controle especial e PrEP.</div>
+  <style>
+    #stack{display:flex;height:130px;border:2px solid var(--ink)}
+    #stack div{height:100%;border-right:2px solid var(--ink);display:flex;align-items:center;padding-left:20px;font:900 70px/1 "Sch";letter-spacing:-.04em;overflow:hidden}
+    #stack div:last-child{border-right:0}
+    #stackl{display:grid;grid-template-columns:58fr 25fr 17fr;margin-top:16px}
+    #stackl div{padding-right:20px;font:400 31px/1.3 "Sch"}
+    #stackl b{font-weight:700}
+    #ages{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;align-items:end;height:250px}
+    #ages .a{display:flex;flex-direction:column;justify-content:flex-end;height:100%}
+    #ages .a i{display:block;background:var(--ink)}
+    #ages .a.o i{background:var(--alert)}
+    #ages .a b{font:800 48px/1 "Sch";margin-bottom:6px;letter-spacing:-.02em}
+    #ages .a em{font:500 27px/1.2 "Mono";font-style:normal;margin-top:10px}
+  </style>
+  <aside class="notes">
+    <p>Motivos: 589 seguimentos de atendimento recente (58%) e 333 de condições crônicas e ciclos de vida (33%): 91% para continuidade. Agudas simples: 5%. Receitas: 2%.</p>
+    <p>Perfil: 73% mulheres. Pessoas com 60 anos ou mais foram só 12%, embora concentrem doenças crônicas. Os autores levantam a hipótese de dificuldade com o meio digital; o artigo não mediu.</p>
+  </aside>
+</section>
+
+<!-- 12 CONTRIBUIÇÕES E LIMITAÇÕES -->
+<section class="slide" data-sec="3 · Resultados" data-t="2.5">
+  <div class="bar"><span>3 · Resultados · análise crítica</span><span>12 / 22</span></div>
+  <div class="t">Contribuições e limitações do estudo</div>
+  <div class="abs" style="left:100px;right:100px;top:260px;display:grid;grid-template-columns:1fr 1fr">
+    <div style="padding-right:50px;border-right:2px solid var(--ink)">
+      <div class="lb" style="color:var(--green);margin-bottom:22px">Contribuições</div>
+      <ol class="ol">
+        <li>Modelo de governança replicável, com a organização comunitária dentro da implantação.</li>
+        <li>Mostra a teleconsulta pública usada para continuidade do cuidado (91%).</li>
+        <li>Inclui a violência armada como barreira de acesso à APS.</li>
+        <li>Teleconsulta feita pela equipe de referência e registrada no prontuário da unidade.</li>
+      </ol>
+    </div>
+    <div style="padding-left:50px" class="lim">
+      <div class="lb" style="color:#C7400F;margin-bottom:22px">Limitações</div>
+      <ol class="ol">
+        <li>Estudo descritivo, sem comparação: não mede resolutividade, desfechos ou satisfação.</li>
+        <li>Não informa quantas teleconsultas ocorreram nos dias de unidade fechada.</li>
+        <li>Barreiras citadas: uso das ferramentas, segurança dos dados, conexão instável e idosos.</li>
+        <li>Vídeo por plataforma comercial (Google Meet), sem discussão sobre a LGPD.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="fn">Análise própria sobre Britto et al. (2026). LGPD: Lei nº 13.709/2018, art. 11 (dados pessoais sensíveis).</div>
+  <style>.lim .ol li:before{color:#C7400F}</style>
+  <aside class="notes">
+    <p>Contribuição: o artigo é um guia de implantação. Mostra quem fez o quê, em que ordem, com participação da comunidade, e para que a ferramenta foi usada.</p>
+    <p>Limitações: é descritivo. Não diz se o cuidado melhorou. O argumento mais forte, manter o cuidado nos dias de operação policial, não é medido.</p>
+    <p>Limitação prática: usar Google Meet envolve dado de saúde, que a LGPD classifica como sensível. O artigo cita segurança dos dados como barreira, mas não discute a escolha da plataforma.</p>
+  </aside>
+</section>
+
+<!-- 14 APLICABILIDADE -->
+<section class="slide gr" data-sec="3 · Resultados" data-t="2">
+  <div class="bar"><span>3 · Resultados · aplicabilidade</span><span>13 / 22</span></div>
+  <div class="t">Aplicabilidade na APS da Paraíba</div>
+  <div class="abs" style="left:100px;top:262px;width:720px">
+    <p class="b1">O PEC está implantado em 95% dos municípios paraibanos. A teleconsulta deve ser registrada no campo Plano do SOAP com o código:</p>
+    <div style="margin-top:30px;display:inline-block;background:var(--mint);color:var(--ink);font:800 84px/1 'Sch';letter-spacing:-.02em;padding:14px 22px 12px">03.01.01.025-0</div>
+    <div class="b2" style="margin-top:14px">Teleconsulta na Atenção Primária</div>
+    <div style="font:400 20px/1.3 'Mono';opacity:.8;margin-top:6px">Nota Técnica nº 11/2024-SAPS/MS</div>
+  </div>
+  <div class="abs" style="left:900px;right:100px;top:262px">
+    <div class="lb" style="color:var(--mint);margin-bottom:10px">Usos compatíveis com o artigo</div>
+    <ul id="ap">
+      <li><b>Seguimento</b> após consulta presencial, como retorno de exames</li>
+      <li><b>Monitoramento</b> de hipertensão e diabetes entre consultas presenciais</li>
+      <li><b>Teleinterconsulta</b> com especialista para evitar encaminhamento desnecessário</li>
+      <li><b>Contingência</b> quando a unidade fecha</li>
+    </ul>
+    <div class="lb" style="color:var(--mint);margin:28px 0 10px">Condições</div>
+    <p class="b2">Protocolo de elegibilidade, apoio do ACS, plataforma institucional e direito de recusa do usuário.</p>
+  </div>
+  <div class="fn">Fontes: Nota Técnica nº 11/2024-SAPS/MS; Paraíba Business (2025); Brasil (2017; 2022); CFM (2022).</div>
+  <style>
+    #ap{list-style:none}
+    #ap li{font:400 32px/1.3 "Sch";padding:16px 0;border-bottom:1.5px solid rgba(243,241,234,.4)}
+    #ap li:first-child{border-top:1.5px solid rgba(243,241,234,.4)}
+    #ap b{font-weight:700}
+  </style>
+  <aside class="notes">
+    <p>O artigo é do Rio, mas a lição se transfere: a Paraíba já tem o PEC implantado em quase todos os municípios.</p>
+    <p>Detalhe operacional: não basta abrir a videochamada. Para contar como produção, é preciso registrar o procedimento 03.01.01.025-0 no campo Plano do SOAP.</p>
+    <p>Limites: o CFM exige consulta presencial a cada no máximo 180 dias em doença crônica acompanhada a distância, e a Lei 14.510 garante ao usuário o direito de recusar a teleconsulta.</p>
+  </aside>
+</section>
+
+<!-- 15 SIMULAÇÃO -->
+<section class="slide dk" data-sec="3 · Resultados" data-t="4" id="sim">
+  <div class="bar"><span>3 · Resultados · aplicabilidade</span><span>14 / 22</span></div>
+  <div class="abs" style="left:100px;top:100px;width:1080px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline">
+      <span class="cvt" style="font-size:56px;line-height:1">Simulação: teleconsulta de seguimento</span>
+      <span id="clk" style="font:800 40px/1 'Sch';color:var(--mint)">00:00</span>
+    </div>
+    <div id="stage" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px">
+      <div class="cam"><video id="vidM" muted loop playsinline preload="auto"></video><div class="off"><b>Dra. Ana</b>câmera desligada</div><div class="tag">Dra. Ana · USF</div></div>
+      <div class="cam"><video id="vidP" muted loop playsinline preload="auto"></video><div class="off"><b>D. Maria</b>câmera desligada</div><div class="tag">D. Maria · em casa</div></div>
+    </div>
+    <div style="margin-top:22px;border-top:2px solid var(--paper);padding-top:18px">
+      <div id="curT" style="font:800 44px/1.1 'Sch';letter-spacing:-.02em;color:var(--mint)">Antes da consulta</div>
+      <div id="curD" style="font:400 31px/1.35 'Sch';margin-top:10px">D. Maria, 58 anos, hipertensa, cadastrada na área da USF. Consulta presencial há 2 meses; retorno com resultado de exames.</div>
+    </div>
+  </div>
+  <div class="abs" style="left:1230px;right:100px;top:104px;height:900px;display:flex;flex-direction:column">
+    <div id="steps2" style="flex:1"></div>
+    <div style="display:flex;gap:10px" class="noprint">
+      <button class="sb" id="sback">←</button>
+      <button class="sb" id="salarm">Sinal de alarme</button>
+      <button class="sb pr" id="snext">Avançar →</button>
+    </div>
+  </div>
+  <div class="fn" style="width:1080px;opacity:.7">Caso fictício. Vídeos gerados por IA (Google Gemini).</div>
+  <style>
+    #sim .cam{position:relative;aspect-ratio:1/1;background:#0a0c0b;border:2px solid #3a403d;overflow:hidden}
+    #sim .cam.live{border-color:var(--mint)}
+    #sim .cam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
+    #sim .cam.live video{display:block}
+    #sim .cam .off{position:absolute;inset:0;display:grid;place-content:center;text-align:center;font:400 26px/1.3 "Sch";color:#7d8582}
+    #sim .cam .off b{display:block;font:800 60px/1 "Sch";color:#3f4643;margin-bottom:8px}
+    #sim .cam.live .off{display:none}
+    #sim .cam .tag{position:absolute;left:14px;bottom:14px;background:rgba(17,22,20,.88);font:500 26px/1 "Mono";padding:10px 12px}
+    #sim .st{display:grid;grid-template-columns:50px 1fr;gap:0 10px;padding:13px 0;border-bottom:1.5px solid #333a37;opacity:.38;align-items:baseline}
+    #sim .st.cur,#sim .st.past{opacity:1}
+    #sim .st .sn{font:800 38px/1 "Sch"}
+    #sim .st.cur .sn{color:var(--mint)}
+    #sim .st .stt{font:600 30px/1.15 "Sch"}
+    #sim .st.past .stt:after{content:"  ✓";color:var(--mint)}
+    #sim .soap{grid-column:1/3;display:none;margin-top:14px;border:2px solid var(--mint)}
+    #sim .st.cur .soap{display:block}
+    #sim .soap div{display:grid;grid-template-columns:48px 1fr;font:400 28px/1.28 "Sch";border-bottom:1.5px solid #333a37;padding:10px 12px}
+    #sim .soap div:last-child{border-bottom:0}
+    #sim .soap b{font:800 32px/1 "Sch";color:var(--mint)}
+    #sim .sb{all:unset;cursor:pointer;font:600 23px/1 "Mono";text-transform:uppercase;border:2px solid var(--paper);padding:17px 16px}
+    #sim .sb.pr{background:var(--mint);color:var(--ink);border-color:var(--mint);flex:1;text-align:center}
+    #sim.alarm .cam{border-color:var(--alert)}
+    #sim.alarm #curT{color:var(--alert)}
+    body.print #sim .st{opacity:1}
+    body.print #sim .cam video{display:block}
+    body.print #sim .cam .off{display:none}
+    body.print #sim .st[data-k="4"] .soap{display:block}
+  </style>
+  <aside class="notes">
+    <p>Simulação de uma teleconsulta de seguimento na APS, juntando o artigo e as normas. “Avançar” (ou seta ↓) passa as etapas; os vídeos rodam nas etapas 4 e 5.</p>
+    <ul>
+      <li>1 Acolhimento: só entra quem é cadastrado na área e não tem sinal de alarme. “Sinal de alarme” mostra o desvio para o 192 (clique de novo para voltar).</li>
+      <li>2 Consentimento registrado; a pessoa pode recusar e ser atendida na unidade (Lei 14.510).</li>
+      <li>3 Teste de conexão; se falhar, o ACS apoia ou a consulta passa a ser presencial.</li>
+      <li>4 Consulta de seguimento: motivo de 58% das teleconsultas na Maré.</li>
+      <li>5 Registro em SOAP no PEC com o código 03.01.01.025-0 no Plano.</li>
+      <li>6 Retorno presencial em até 180 dias (CFM 2.314) e acompanhamento pelo ACS.</li>
+    </ul>
+  </aside>
+</section>
+
+<!-- 16 VIVÊNCIA -->
+<section class="slide" data-sec="3 · Resultados" data-t="3">
+  <div class="bar"><span>3 · Resultados · experiência vivenciada</span><span>15 / 22</span></div>
+  <div class="t">Experiência vivenciada</div>
+  <div class="abs" style="left:100px;top:250px;width:780px">
+    <p class="b1">Participei do desenvolvimento de um <b class="st">protótipo de plataforma privada de teleconsulta</b>, projeto de um colega, em modo de demonstração.</p>
+    <ol class="ol" style="margin-top:30px">
+      <li>Sinais de alarme encaminham ao SAMU 192 antes de qualquer etapa.</li>
+      <li>O consentimento é registrado com a versão do termo.</li>
+      <li>A conexão é testada antes da fila de atendimento.</li>
+      <li>O mais trabalhoso foi a regulação: guarda do prontuário por 20 anos, LGPD e receita digital.</li>
+    </ol>
+  </div>
+  <div class="abs" style="left:920px;right:60px;top:180px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px">
+    <figure class="ph"><img src="img/prototipo/p_triagem.jpg" alt=""><figcaption>Triagem</figcaption></figure>
+    <figure class="ph"><img src="img/prototipo/p_emergencia.jpg" alt=""><figcaption>Sinal de alarme</figcaption></figure>
+    <figure class="ph"><img src="img/prototipo/p_termo.jpg" alt=""><figcaption>Consentimento</figcaption></figure>
+  </div>
+  <div class="fn">Telas em modo de demonstração, sem pacientes nem médicos reais (nov. 2026), uso autorizado. Normas: Lei 14.510/2022; CFM 2.314/2022; Lei 13.787/2018; Lei 13.709/2018.</div>
+  <style>
+    .ph{margin:0}
+    .ph img{display:block;width:100%;border:2px solid var(--ink)}
+    .ph figcaption{font:500 27px/1.2 "Mono";margin-top:14px}
+  </style>
+  <aside class="notes">
+    <p>Minha experiência com o tema: participei do desenvolvimento de um protótipo de plataforma privada de teleconsulta, projeto de um colega, ainda em demonstração, sem pacientes reais.</p>
+    <p>Mostrar as telas: triagem com sinais de alarme, encaminhamento ao 192 sem cobrança e termo de consentimento.</p>
+    <p>Aprendizado: a tecnologia foi a parte mais simples. O difícil foi o que a lei exige: consentimento (Lei 14.510 e CFM 2.314), prontuário guardado por 20 anos (Lei 13.787/2018), dado sensível (LGPD, art. 11) e receita com certificado digital ICP-Brasil. A lista de sinais de alarme ainda depende de validação médica: não é quem programa que decide.</p>
+  </aside>
+</section>
+
+<!-- 17 COMPARAÇÃO -->
+<section class="slide" data-sec="3 · Resultados" data-t="2">
+  <div class="bar"><span>3 · Resultados · artigo e experiência vivenciada</span><span>16 / 22</span></div>
+  <div class="t">Protótipo privado e teleconsulta na Maré</div>
+  <div class="abs" style="left:100px;right:100px;top:262px">
+    <table class="tb" id="cmp">
+      <thead><tr><th style="width:22%"></th><th style="width:36%">Protótipo privado</th><th class="g">Teleconsulta na Maré (SUS)</th></tr></thead>
+      <tbody>
+        <tr><td>Acesso</td><td>Pagamento por consulta</td><td class="g">Cadastro na área da unidade</td></tr>
+        <tr><td>Quem atende</td><td>Médico disponível na fila</td><td class="g">Profissional da equipe de referência</td></tr>
+        <tr><td>Uso principal</td><td>Queixa aguda, atendimento único</td><td class="g">Seguimento e crônicos (91%)</td></tr>
+        <tr><td>Registro</td><td>Prontuário da plataforma</td><td class="g">Prontuário eletrônico da unidade</td></tr>
+        <tr><td>Depois da consulta</td><td>O atendimento termina</td><td class="g">O cuidado continua na unidade e na rede</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="abs b1" style="left:100px;right:100px;top:800px">Na Maré, a teleconsulta acompanha o <span class="mk">vínculo</span> com a equipe, como pedem a longitudinalidade e a coordenação do cuidado da PNAB.</p>
+  <style>
+    #cmp th.g{background:var(--green);color:var(--paper);padding:14px 18px}
+    #cmp td.g{background:rgba(11,79,62,.09);padding-left:18px;font-weight:600}
+  </style>
+  <aside class="notes">
+    <p>Articulação entre o artigo e a vivência. O protótipo segue o modelo de pronto atendimento online: pago por episódio, com o médico que estiver na fila.</p>
+    <p>Na Maré, o acesso é pelo cadastro no território, quem atende é a equipe de referência, o uso é seguimento e crônico, e o registro fica no prontuário da unidade.</p>
+    <p>O que define se a teleconsulta serve à Atenção Básica é o vínculo com a equipe. Isso leva à PNAB.</p>
+  </aside>
+</section>
+
+<!-- 18 PNAB PRINCÍPIOS E DIRETRIZES -->
+<section class="slide" data-sec="3 · Resultados" data-t="2.5">
+  <div class="bar"><span>3 · Resultados · PNAB 2017</span><span>17 / 22</span></div>
+  <div class="t">Princípios e diretrizes da PNAB no estudo</div>
+  <div class="abs" style="left:100px;right:100px;top:246px">
+    <table class="tb" id="pn">
+      <thead><tr><th style="width:27%">PNAB 2017</th><th style="width:38%">O que o artigo mostra</th><th>Ponto de atenção</th></tr></thead>
+      <tbody>
+        <tr class="p"><td>Universalidade</td><td>Acesso a partir de casa</td><td>Depende de aparelho e internet</td></tr>
+        <tr class="p"><td>Equidade</td><td>Implantado em território vulnerável</td><td>60 anos ou mais: 12% dos atendimentos</td></tr>
+        <tr class="p"><td>Integralidade</td><td>Seguimento, crônicos e ciclos de vida</td><td>Exame físico continua presencial</td></tr>
+        <tr><td>Territorialização</td><td>Só moradores cadastrados na área</td><td>—</td></tr>
+        <tr><td>Longitudinalidade</td><td>91% seguimento e crônicos</td><td>Efeito sobre o vínculo não medido</td></tr>
+        <tr><td>Coordenação do cuidado</td><td>Registro no prontuário da unidade</td><td>Vídeo em plataforma externa</td></tr>
+        <tr><td>Participação da comunidade</td><td>Redes da Maré na governança</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="fn">Fonte: Brasil (2017), Anexo, itens 1.1 (princípios, em verde) e 1.2 (diretrizes).</div>
+  <style>
+    #pn td{font-size:29px;padding-top:15px;padding-bottom:15px}
+    #pn tr.p td:first-child{color:var(--green)}
+    #pn td:last-child{color:#B23A12}
+  </style>
+  <aside class="notes">
+    <p>Três princípios: universalidade, equidade, integralidade. O artigo avança em todos, com um ponto de atenção em cada.</p>
+    <p>Diretrizes: territorialização e adstrição (só cadastrados), longitudinalidade (os 91%), coordenação do cuidado (prontuário da unidade) e participação da comunidade (Redes da Maré). Resolutividade não foi medida.</p>
+  </aside>
+</section>
+
+<!-- 19 ATRIBUIÇÕES -->
+<section class="slide" data-sec="3 · Resultados" data-t="2">
+  <div class="bar"><span>3 · Resultados · PNAB 2017</span><span>18 / 22</span></div>
+  <div class="t">Atribuições da equipe e do médico</div>
+  <div class="abs" style="left:100px;right:100px;top:262px;display:grid;grid-template-columns:1fr 1fr">
+    <div style="padding-right:48px;border-right:2px solid var(--ink)">
+      <div class="lb" style="margin-bottom:6px">Item 4.1 · comuns a toda a equipe</div>
+      <ul class="at">
+        <li><b>X, XV</b>Registrar no sistema de informação da AB</li>
+        <li><b>VII</b>Acompanhar a população ao longo do tempo</li>
+        <li><b>IX</b>Coordenar o cuidado em outros pontos da rede</li>
+        <li><b>XII</b>Gerir filas, evitando encaminhamento desnecessário</li>
+      </ul>
+    </div>
+    <div style="padding-left:48px">
+      <div class="lb" style="margin-bottom:6px;color:var(--green)">Item 4.2.1 · médico</div>
+      <ul class="at m">
+        <li><b>III</b>Estratificar risco e fazer plano de cuidados com a equipe</li>
+        <li><b>IV</b>Encaminhar mantendo o acompanhamento do plano terapêutico</li>
+        <li><b>V</b>Indicar internação e manter o acompanhamento</li>
+        <li><b>VI</b>Planejar e avaliar as ações dos ACS e ACE com a equipe</li>
+      </ul>
+    </div>
+  </div>
+  <div class="fn">Fonte: Brasil (2017), Anexo, itens 4.1 e 4.2. No texto publicado, o item do médico aparece numerado como 4.2.1.</div>
+  <style>
+    .at{list-style:none}
+    .at li{display:grid;grid-template-columns:120px 1fr;gap:10px;padding:24px 0;border-bottom:1.5px solid var(--gray);font:400 31px/1.3 "Sch"}
+    .at b{font:800 36px/1.05 "Sch"}
+    .at.m b{color:var(--green)}
+  </style>
+  <aside class="notes">
+    <p>Comum a todos: registrar no sistema de informação (incisos X e XV), que é onde entra o prontuário eletrônico. Também longitudinalidade (VII), coordenação (IX) e gestão de filas (XII).</p>
+    <p>Específicas do médico: estratificação de risco e plano de cuidados (III), encaminhar sem abandonar o plano terapêutico (IV), indicar internação (V), planejar ações dos ACS e ACE (VI). Os incisos I e II tratam da atenção e das consultas clínicas.</p>
+    <p>Na teleconsulta, o inciso IV é o mais sensível: encaminhar não encerra a responsabilidade do médico da AB.</p>
+  </aside>
+</section>
+
+<!-- 21 TELECONSULTA, PRESENCIAL OU 192 -->
+<section class="slide gr" data-sec="3 · Resultados" data-t="2.5" id="tri">
+  <div class="bar"><span>3 · Resultados · aplicabilidade</span><span>19 / 22</span></div>
+  <div class="t">Teleconsulta, presencial ou SAMU 192?</div>
+  <div class="abs" style="left:100px;right:100px;top:256px">
+    <div class="tr" data-a="t"><div class="tq"><b>1</b>Hipertenso acompanhado, consulta presencial há 2 meses, quer mostrar os exames</div><div class="tb2 noprint"><button data-c="t">Teleconsulta</button><button data-c="p">Presencial</button><button data-c="e">192</button></div><div class="ta">Teleconsulta · seguimento</div></div>
+    <div class="tr" data-a="e"><div class="tq"><b>2</b>Aperto no peito há 30 minutos, irradiando para o braço</div><div class="tb2 noprint"><button data-c="t">Teleconsulta</button><button data-c="p">Presencial</button><button data-c="e">192</button></div><div class="ta">SAMU 192 · sinal de alarme</div></div>
+    <div class="tr" data-a="p"><div class="tq"><b>3</b>Diabético acompanhado só a distância, última consulta presencial há 7 meses</div><div class="tb2 noprint"><button data-c="t">Teleconsulta</button><button data-c="p">Presencial</button><button data-c="e">192</button></div><div class="ta">Presencial · limite de 180 dias (CFM 2.314)</div></div>
+    <div class="tr" data-a="t"><div class="tq"><b>4</b>Usuária acompanhada na unidade precisa renovar o anticoncepcional</div><div class="tb2 noprint"><button data-c="t">Teleconsulta</button><button data-c="p">Presencial</button><button data-c="e">192</button></div><div class="ta">Teleconsulta · categoria do artigo</div></div>
+    <div class="tr" data-a="p"><div class="tq"><b>5</b>Usuário convidado para teleconsulta prefere ser atendido na unidade</div><div class="tb2 noprint"><button data-c="t">Teleconsulta</button><button data-c="p">Presencial</button><button data-c="e">192</button></div><div class="ta">Presencial · direito de recusa (Lei 14.510)</div></div>
+  </div>
+  <div class="fn">Exercício didático a partir das normas citadas. Não substitui protocolo clínico municipal.</div>
+  <style>
+    #tri .tr{display:grid;grid-template-columns:1fr 680px;gap:30px;align-items:center;border-top:1.5px solid rgba(243,241,234,.45);padding:18px 0;min-height:140px}
+    #tri .tr:last-child{border-bottom:1.5px solid rgba(243,241,234,.45)}
+    #tri .tq{font:400 31px/1.3 "Sch";display:grid;grid-template-columns:60px 1fr}
+    #tri .tq b{font:800 42px/1 "Sch";color:var(--mint)}
+    #tri .tb2{display:flex;gap:10px}
+    #tri .tb2 button{all:unset;cursor:pointer;flex:1;text-align:center;font:500 22px/1 "Mono";text-transform:uppercase;border:2px solid var(--paper);padding:17px 0}
+    #tri .tb2 button:hover{background:var(--green2)}
+    #tri .ta{display:none;font:700 29px/1.25 "Sch";padding:16px 20px}
+    #tri .tr.done .tb2{display:none}
+    #tri .tr.done .ta{display:block;background:var(--mint);color:var(--ink)}
+    #tri .tr.done.no .ta{background:var(--alert);color:var(--ink)}
+    #tri .tr.done.no .ta:before{content:"Resposta: "}
+    body.print #tri .ta{display:block;background:var(--mint);color:var(--ink)}
+  </style>
+  <aside class="notes">
+    <ul>
+      <li>1: teleconsulta, é seguimento.</li>
+      <li>2: 192, sinal de alarme. Teleconsulta não atende emergência.</li>
+      <li>3: presencial, a Resolução CFM 2.314 exige consulta presencial a cada no máximo 180 dias em doença crônica.</li>
+      <li>4: teleconsulta, renovação de receita de uso contínuo é uma das categorias do artigo.</li>
+      <li>5: presencial, a Lei 14.510 garante o direito de recusa com atendimento presencial.</li>
+    </ul>
+  </aside>
+</section>
+
+<!-- 22 SÍNTESE E OPINIÃO -->
+<section class="slide" data-sec="4 · Considerações finais" data-t="2.5">
+  <div class="bar"><span>4 · Considerações finais</span><span>20 / 22</span></div>
+  <div class="t">Síntese e opinião pessoal</div>
+  <div class="abs" style="left:100px;top:262px;width:700px">
+    <div class="lb" style="color:var(--green);margin-bottom:20px">Síntese</div>
+    <ol class="ol">
+      <li>Na Maré, 91% das teleconsultas foram de seguimento e de condições crônicas.</li>
+      <li>A implantação dependeu de governança com a comunidade.</li>
+      <li>Idosos e pessoas sem conexão seguem dependendo do presencial.</li>
+    </ol>
+  </div>
+  <div class="abs" style="left:880px;right:100px;top:262px;border-left:6px solid var(--green);padding-left:46px">
+    <div class="lb" style="color:var(--green);margin-bottom:20px">Opinião</div>
+    <p class="b2" style="font-size:32px;line-height:1.44">Considero o artigo útil como guia de implantação: mostra quem participa, em que ordem e para que a ferramenta foi usada. Como evidência, é limitado. Não mede desfechos nem mostra o que ocorreu nos dias de unidade fechada, que é o seu principal argumento.</p>
+    <p class="b2" style="font-size:32px;line-height:1.44;margin-top:24px">O protótipo me mostrou o contraste: sem uma equipe de referência, a teleconsulta resolve uma queixa, mas não acompanha a pessoa ao longo do tempo, que é o que a PNAB espera da Atenção Básica.</p>
+  </div>
+  <aside class="notes">
+    <p>Síntese: ler a coluna da esquerda.</p>
+    <p>Opinião em primeira pessoa: útil como modelo de implantação, fraco como prova de efeito; falta medir o argumento principal. Ligar com a vivência: o protótipo é teleconsulta por episódio; a da Maré é continuidade do vínculo.</p>
+  </aside>
+</section>
+
+<!-- 23 FORMAÇÃO -->
+<section class="slide dk" data-sec="4 · Considerações finais" data-t="2">
+  <div class="bar"><span>4 · Considerações finais</span><span>21 / 22</span></div>
+  <div class="t">Importância para a formação e a prática médica na Atenção Básica</div>
+  <div class="abs" style="left:100px;right:100px;top:360px;display:grid;grid-template-columns:repeat(4,1fr);border-top:2px solid var(--paper)" id="fm">
+    <div><b>Registrar</b><p>O registro em SOAP no PEC, com o código de procedimento, garante continuidade e conta como produção.</p></div>
+    <div><b>Saber o limite</b><p>Sinais de alarme, consulta presencial a cada 180 dias e direito de recusa.</p></div>
+    <div><b>Perguntar sobre acesso digital</b><p>Celular, internet e quem ajuda em casa são condição de acesso.</p></div>
+    <div><b>Proteger o dado</b><p>Dado de saúde é dado sensível. Usar plataforma institucional, não aplicativo pessoal.</p></div>
+  </div>
+  <div class="fn" style="opacity:.7">Fontes: Brasil (2017; 2018; 2022); CFM (2022); Nota Técnica nº 11/2024-SAPS/MS; Soibelman, Fornazin e Albuquerque (2025).</div>
+  <style>
+    #fm>div{border-right:2px solid var(--paper);padding:28px 30px 0}
+    #fm>div:first-child{padding-left:0}#fm>div:last-child{border-right:0}
+    #fm b{display:block;font:800 46px/1.08 "Sch";letter-spacing:-.02em;color:var(--mint);min-height:120px}
+    #fm p{font:400 33px/1.38 "Sch"}
+  </style>
+  <aside class="notes">
+    <ul>
+      <li>Registrar bem: prontuário é ato médico e atribuição comum da PNAB.</li>
+      <li>Saber o limite: sinais de alarme, regra dos 180 dias e direito de recusa.</li>
+      <li>Incluir o acesso digital na anamnese social: é condição de acesso.</li>
+      <li>Proteger o dado: Soibelman e colegas encontraram WhatsApp entre as ferramentas mais citadas em experiências municipais de saúde digital. Funciona, mas não é lugar de dado de saúde.</li>
+    </ul>
+    <p>A inserção precoce na Atenção Básica, como no IESEC, é onde essas competências começam.</p>
+  </aside>
+</section>
+
+<!-- 24 REFERÊNCIAS -->
+<section class="slide" data-sec="5 · Referências" data-t="1">
+  <div class="bar"><span>5 · Referências</span><span>22 / 22</span></div>
+  <div class="t" style="font-size:64px">Referências</div>
+  <div class="abs refs" style="left:100px;right:100px;top:210px">
+    <p>BRASIL. Lei nº 13.709, de 14 de agosto de 2018. Lei Geral de Proteção de Dados Pessoais (LGPD). <b>Diário Oficial da União</b>: seção 1, Brasília, DF, 15 ago. 2018.</p>
+    <p>BRASIL. Lei nº 13.787, de 27 de dezembro de 2018. Dispõe sobre a digitalização e a utilização de sistemas informatizados para a guarda, o armazenamento e o manuseio de prontuário de paciente. <b>Diário Oficial da União</b>: seção 1, Brasília, DF, 28 dez. 2018.</p>
+    <p>BRASIL. Lei nº 14.510, de 27 de dezembro de 2022. Altera a Lei nº 8.080, de 19 de setembro de 1990, para autorizar e disciplinar a prática da telessaúde em todo o território nacional [...]. <b>Diário Oficial da União</b>: seção 1, Brasília, DF, 28 dez. 2022.</p>
+    <p>BRASIL. Ministério da Saúde. Gabinete do Ministro. Portaria nº 2.436, de 21 de setembro de 2017. Aprova a Política Nacional de Atenção Básica, estabelecendo a revisão de diretrizes para a organização da Atenção Básica, no âmbito do Sistema Único de Saúde (SUS). <b>Diário Oficial da União</b>: seção 1, Brasília, DF, n. 183, p. 68, 22 set. 2017.</p>
+    <p>BRASIL. Ministério da Saúde. Secretaria de Atenção Primária à Saúde. <b>Nota Técnica nº 11/2024-CAIN/CGESCO/DESCO/SAPS/MS</b>. Brasília, DF: MS, 2024. Disponível em: https://www.gov.br/saude. Acesso em: 18 nov. 2026.</p>
+    <p>BRITTO, F. A. <i>et al.</i> Teleconsulta na atenção primária: modelo conceitual e implementação em territórios de favelas. <b>Ciência &amp; Saúde Coletiva</b>, Rio de Janeiro, v. 31, n. 5, 2026. DOI: https://doi.org/10.1590/1413-81232026315.24292025.</p>
+    <p>CELUPPI, I. C. <i>et al.</i> Dez anos do Prontuário Eletrônico do Cidadão e-SUS APS: em busca de um Sistema Único de Saúde eletrônico. <b>Revista de Saúde Pública</b>, São Paulo, v. 58, art. 23, 2024. DOI: https://doi.org/10.11606/s1518-8787.2024058005770.</p>
+    <p>CONSELHO FEDERAL DE MEDICINA. Resolução CFM nº 2.314, de 20 de abril de 2022. Define e regulamenta a telemedicina, como forma de serviços médicos mediados por tecnologias de comunicação. <b>Diário Oficial da União</b>: seção 1, Brasília, DF, n. 84, p. 227, 5 maio 2022.</p>
+    <p>KROLL, R. Atenção Primária avança em saúde digital, mas telessaúde e interoperabilidade ainda são desafios. <b>Futuro da Saúde</b>, 9 jul. 2025. Disponível em: https://futurodasaude.com.br/atencao-primaria-saude-digital-nas-ubs/. Acesso em: 18 nov. 2026.</p>
+    <p>PARAÍBA lidera ranking nacional de implantação do prontuário eletrônico do e-SUS APS. <b>Paraíba Business</b>, João Pessoa, 30 jun. 2025. Disponível em: https://paraibabusiness.com.br. Acesso em: 18 nov. 2026.</p>
+    <p>SOIBELMAN, G.; FORNAZIN, M.; ALBUQUERQUE, M. V. Saúde digital na Atenção Primária à Saúde no Brasil: experiências desenvolvidas no Sistema Único de Saúde entre 2018 e 2022. <b>Saúde em Debate</b>, Rio de Janeiro, v. 49, n. esp. 1, 2025. DOI: https://doi.org/10.1590/2358-28982025E110000P.</p>
+    <p>TÚLLIO F. <b>Unidade Básica de Saúde José Vicente Soares Filho</b>. 2023. 1 fotografia. Wikimedia Commons, CC BY-SA 4.0. Disponível em: https://commons.wikimedia.org. Acesso em: 18 nov. 2026.</p>
+  </div>
+  <style>
+    .refs{column-count:2;column-gap:70px}
+    .refs p{font:400 23px/1.32 "Sch";margin-bottom:13px;break-inside:avoid}
+  </style>
+  <aside class="notes"><p>Referências em ABNT (NBR 6023), em ordem alfabética, com as obrigatórias: o artigo (Britto et al., 2026) e a PNAB (Portaria nº 2.436/2017). Agradecer e abrir para perguntas.</p></aside>
+</section>
+
+</div>
+
+<div id="ui"><div id="pbar"></div></div>
+<div id="hud"><span id="timer">35:00</span><button id="tbtn">▶</button><button id="nbtn">Notas</button><button id="fbtn">Tela cheia</button><span id="cnt">1/24</span></div>
+<div id="help">← → navegar · N notas · T cronômetro · F tela cheia · R revelar</div>
+<aside id="notes"><h5 id="nh"></h5><div class="tt" id="nt"></div><div id="nb"></div></aside>
+
+<script>
+(function(){
+  const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+  const slides=$$('.slide'), N=slides.length;
+  const isPrint=new URLSearchParams(location.search).has('print');
+
+  const EV=[
+    ['2013','Começa a implantação do <b>PEC e-SUS APS</b>',''],
+    ['2017','<b>PNAB</b> cita a telessaúde no referenciamento','k'],
+    ['2020','<b>RNDS</b>: rede nacional de dados em saúde',''],
+    ['2022','<b>Lei 14.510</b> e <b>Resolução CFM 2.314</b> regulamentam telessaúde e telemedicina','k'],
+    ['2023','PEC ganha <b>videochamada</b> e <b>prescrição eletrônica</b>',''],
+    ['2023','Criação da <b>SEIDIGI</b>, secretaria de saúde digital do MS',''],
+    ['2024','<b>Programa SUS Digital</b> e Ação Estratégica de Telessaúde',''],
+    ['2024–25','Teleconsulta nas clínicas da família da <b>Maré</b>','m']
+  ];
+  $('#tl').innerHTML=EV.map(e=>`<div class="ev ${e[2]}"><div class="y">${e[0]}</div><div class="d">${e[1]}</div></div>`).join('');
+
+  const M=[['nov','42'],['dez','39'],['jan','69'],['fev','153'],['mar','76'],['abr','72'],['mai','274'],['jun','292']];
+  $('#mchart').innerHTML=M.map(m=>`<div class="c ${+m[1]>200?'hi':''}"><span>${m[1]}</span><i style="height:${(+m[1]/292*480).toFixed(0)}px"></i><em>${m[0]}</em></div>`).join('');
+
+  const S=[[58,'var(--mint)','58%',''],[33,'var(--green)','33%','var(--paper)'],[5,'var(--gray)','',''],[2,'#8b928e','',''],[2,'#d6dad7','','']];
+  $('#stack').innerHTML=S.map(s=>`<div style="flex:${s[0]};background:${s[1]};color:${s[3]||'var(--ink)'}">${s[2]}</div>`).join('');
+  $('#stackl').innerHTML='<div><b>Seguimento de atendimento recente</b> · 589</div><div><b>Crônicos e ciclos de vida</b> · 333</div><div style="font-size:24px">Agudas 5%<br>Receitas 2%<br>Outros 2%</div>';
+
+  const A=[['0–17','7',''],['18–39','44',''],['40–59','34',''],['60–79','11','o'],['80+','1','o']];
+  $('#ages').innerHTML=A.map(a=>`<div class="a ${a[2]}"><b>${a[1]}%</b><i style="height:${(+a[1]/44*150).toFixed(0)}px"></i><em>${a[0]}</em></div>`).join('');
+
+  const ST=[
+    ['Acolhimento','Cadastrada na área da unidade, sem sinal de alarme, motivo compatível com o protocolo: seguimento.'],
+    ['Consentimento','Aceite registrado. Ela pode recusar e ser atendida na unidade (Lei 14.510).'],
+    ['Teste de conexão','Câmera e áudio funcionando. Se falhar, o ACS apoia ou a consulta passa a ser presencial.'],
+    ['Teleconsulta','Revisão dos exames, adesão ao tratamento e pressão medida em casa.'],
+    ['Registro em SOAP','Registro no PEC, com o procedimento de teleconsulta no campo Plano.',true],
+    ['Continuidade','Consulta presencial agendada dentro de 180 dias (CFM 2.314). O ACS acompanha na visita domiciliar.']
+  ];
+  const SOAP='<div class="soap"><div><b>S</b>Sem queixas. Traz os exames pedidos.</div><div><b>O</b>Exames normais. PA em casa: 128 × 82 mmHg.</div><div><b>A</b>Hipertensão controlada.</div><div><b>P</b>Manter conduta. Código 03.01.01.025-0. Retorno presencial agendado.</div></div>';
+  $('#steps2').innerHTML=ST.map((s,k)=>`<div class="st" data-k="${k}"><div class="sn">${k+1}</div><div class="stt">${s[0]}</div>${s[2]?SOAP:''}</div>`).join('');
+  const vM=$('#vidM'),vP=$('#vidP');
+
+  if(isPrint){
+    document.body.classList.add('print');
+    vM.poster='img/video/medica_poster.jpg';vP.poster='img/video/paciente_poster.jpg';
+    $('#poll').classList.add('revealed');
+    $('#curT').textContent='Seis etapas';$('#curD').textContent='Acolhimento, consentimento, teste de conexão, teleconsulta, registro em SOAP no PEC e continuidade do cuidado.';
+    return;
+  }
+
+  function fit(){const s=Math.min(innerWidth/1920,innerHeight/1080);const d=$('#deck');d.style.transform=`scale(${s})`;d.style.left=((innerWidth-1920*s)/2)+'px';d.style.top=((innerHeight-1080*s)/2)+'px'}
+  addEventListener('resize',fit);fit();
+
+  let i=Math.max(0,Math.min(N-1,(parseInt(location.hash.slice(1))||1)-1));
+  function show(n){i=Math.max(0,Math.min(N-1,n));slides.forEach((s,k)=>s.classList.toggle('on',k===i));
+    $('#pbar').style.width=((i+1)/N*100)+'%';$('#cnt').textContent=(i+1)+'/'+N;history.replaceState(null,'','#'+(i+1));
+    const s=slides[i],nt=s.querySelector('.notes'),tt=s.querySelector('.t');
+    $('#nh').textContent=tt?tt.textContent:'Capa';$('#nt').textContent=`Tela ${i+1} de ${N} · ${s.dataset.sec} · ${s.dataset.t} min`;$('#nb').innerHTML=nt?nt.innerHTML:''}
+  show(i);
+  addEventListener('keydown',e=>{
+    if(e.target.isContentEditable)return;const k=e.key;
+    if(['ArrowRight','PageDown',' '].includes(k)){e.preventDefault();show(i+1)}
+    else if(['ArrowLeft','PageUp'].includes(k)){e.preventDefault();show(i-1)}
+    else if(k==='Home')show(0);else if(k==='End')show(N-1);
+    else if(k==='n'||k==='N')$('#notes').classList.toggle('open');
+    else if(k==='t'||k==='T')toggleT();
+    else if(k==='f'||k==='F')fs();
+    else if((k==='r'||k==='R')&&slides[i].id==='poll')$('#poll').classList.add('revealed');
+  });
+  $('#nbtn').onclick=()=>$('#notes').classList.toggle('open');$('#fbtn').onclick=fs;
+  function fs(){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}
+
+  let left=35*60,run=false,tid=null;
+  function draw(){const neg=left<0,a=Math.abs(left);$('#timer').textContent=(neg?'+':'')+String(Math.floor(a/60)).padStart(2,'0')+':'+String(a%60).padStart(2,'0');
+    const el=35*60-left;$('#timer').className=el>=38*60?'late':(el>=30*60?'warn':'')}
+  function toggleT(){run=!run;$('#tbtn').textContent=run?'❚❚':'▶';if(run)tid=setInterval(()=>{left--;draw()},1000);else clearInterval(tid)}
+  $('#tbtn').onclick=toggleT;draw();
+
+  $('#pollbtn').onclick=()=>$('#poll').classList.add('revealed');
+  $$('#prow .po').forEach(o=>o.onclick=()=>{$$('#prow .po').forEach(x=>x.classList.remove('picked'));o.classList.add('picked')});
+
+  const sim=$('#sim');let sk=-1,clkT=null,secs=0;
+  vM.src='img/video/medica.mp4';vP.src='img/video/paciente.mp4';
+  const D0=['Antes da consulta',$('#curD').textContent];
+  function simDraw(){
+    const alarm=sim.classList.contains('alarm');
+    $$('#sim .st').forEach((e,k)=>{e.classList.toggle('cur',k===sk);e.classList.toggle('past',k<sk)});
+    const live=sk>=3&&sk<=4&&!alarm;
+    $$('#sim .cam').forEach(c=>c.classList.toggle('live',live));
+    [vM,vP].forEach(v=>{if(live)v.play().catch(()=>{});else v.pause()});
+    if(alarm){$('#curT').textContent='Sinal de alarme';$('#curD').textContent='Dor no peito há 30 minutos. A teleconsulta é interrompida: orientar ligação imediata para o SAMU 192.'}
+    else if(sk<0){$('#curT').textContent=D0[0];$('#curD').textContent=D0[1]}
+    else{$('#curT').textContent=(sk+1)+'. '+ST[sk][0];$('#curD').textContent=ST[sk][1]}
+    if(live&&!clkT){clkT=setInterval(()=>{secs++;$('#clk').textContent=String(Math.floor(secs/60)).padStart(2,'0')+':'+String(secs%60).padStart(2,'0')},1000)}
+    if(!live&&clkT){clearInterval(clkT);clkT=null}
+  }
+  function simGo(d){sim.classList.remove('alarm');sk=Math.max(-1,Math.min(ST.length-1,sk+d));simDraw()}
+  $('#snext').onclick=()=>simGo(1);$('#sback').onclick=()=>simGo(-1);
+  $('#salarm').onclick=()=>{sim.classList.toggle('alarm');simDraw()};
+  addEventListener('keydown',e=>{if(slides[i]===sim&&(e.key==='ArrowDown'||e.key==='ArrowUp')){e.preventDefault();simGo(e.key==='ArrowDown'?1:-1)}});
+  simDraw();
+
+  $$('#tri .tr').forEach(c=>c.querySelectorAll('button').forEach(b=>b.onclick=()=>{const ok=b.dataset.c===c.dataset.a;c.classList.add('done',ok?'ok':'no')}));
+})();
+</script>
+</body>
+</html>
